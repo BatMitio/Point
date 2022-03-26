@@ -19,9 +19,15 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 public class PointLocationProvider {
-    private final AppCompatActivity context;
+    private final MainActivity context;
     private final PermissionRequester permissionRequester;
     private FusedLocationProviderClient fusedLocationClient;
 
@@ -34,11 +40,23 @@ public class PointLocationProvider {
             if(locationResult.getLastLocation().getAccuracy() < 10) {
                 location = locationResult.getLastLocation();
                 Log.i(tag, location.getLatitude() + " " + location.getLongitude() + " acc: " + location.getAccuracy());
+                if(context.getMap() != null) {
+                    MarkerOptions markerOptions = new MarkerOptions().position(new LatLng(location.getLatitude(), location.getLongitude()));
+                    context.getMap().clear();
+                    context.getMap().addMarker(markerOptions);
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(markerOptions.getPosition())
+                            .zoom(19.0f)
+                            .bearing(0.0f)
+                            .tilt(30.0f)
+                            .build();
+                    context.getMap().animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+                }
             }
         }
     };
 
-    public PointLocationProvider(AppCompatActivity context) {
+    public PointLocationProvider(MainActivity context) {
         this.context = context;
         this.permissionRequester = new PermissionRequester(this.context);
     }
@@ -47,7 +65,7 @@ public class PointLocationProvider {
     public void startLocationUpdates() {
         this.fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
         LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(100);
+        locationRequest.setInterval(1000);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
